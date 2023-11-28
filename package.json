@@ -1,0 +1,14 @@
+{
+  "name": "lan-rtc",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start:client": "cd client && npm start",
+	"start:server": "cd server && npm start",
+	"start:both": "npm run start:client & npm run start:server"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
