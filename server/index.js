@@ -15,10 +15,7 @@ const messages = [];
 const users = [];
 
 io.on("connection", socket => {
-	const user = {
-		id: Math.random().toString(16).slice(2),
-		nickname: null
-	};
+	let user = null;
 
 	socket.on("getMessages", n => {
 		socket.emit("messages", messages.slice(-n));
@@ -28,42 +25,61 @@ io.on("connection", socket => {
 		callback(users);
 	});
 
-	socket.on("setNickname", (newNickname, callback) => {
-		if (users.some(u => u.nickname === newNickname)) {
-			callback(false);
+	socket.on("login", (selfUser, callback) => {
+		if (!selfUser
+			|| typeof selfUser.token !== "string"
+			|| typeof selfUser.nickname !== "string"
+			|| users.some(u => u.nickname === selfUser.nickname)
+		) {
+			callback(null);
 			return;
 		}
 
-		user.nickname = newNickname;
-
+		user = structuredClone(selfUser);
 		users.push(user);
 
 		const messageEntry = {
 			timestamp: Date.now(),
 			isSystem: true,
-			user,
 			message: `${user.nickname} joined the chat`
 		};
 		messages.push(messageEntry);
 
 		io.emit("userAdded", messageEntry);
 
-		callback(true);
+		callback(user);
 	});
 
-	socket.on("sendMessage", message => {
-		const nickname = user.nickname;
-		if (nickname === null) return;
+	socket.on("sendMessage", ({ message, image}) => {
+		if (user === null) return;
 
 		const messageEntry = {
 			timestamp: Date.now(),
 			isSystem: false,
 			user,
-			message
+			message,
+			image
 		};
 		messages.push(messageEntry);
 
 		io.emit("newMessage", messageEntry);
+	});
+
+	socket.on("deleteMessage", messageEntry => {
+		if (user === null || messageEntry.isSystem) return;
+
+		const timestamp = messageEntry.timestamp;
+		if (!timestamp) return;
+
+		const index = messages.findIndex(m => m.timestamp === timestamp);
+		if (index === -1) return;
+
+		const message = messages[index];
+		if (message.isSystem || message.user.token !== user.token) return;
+
+		messages.splice(index, 1);
+
+		io.emit("messageDeleted", messageEntry);
 	});
 
 	socket.on("disconnect", reason => {

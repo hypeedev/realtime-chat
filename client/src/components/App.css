@@ -1,13 +1,18 @@
 @font-face {
-    font-family: Lato;
+    font-family: LatoLight;
     src: url(../../public/fonts/Lato-Light.ttf);
+}
+
+@font-face {
+    font-family: LatoRegular;
+    src: url(../../public/fonts/Lato-Regular.ttf);
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: Lato, serif;
+    font-family: LatoLight, serif;
 }
 
 #app {

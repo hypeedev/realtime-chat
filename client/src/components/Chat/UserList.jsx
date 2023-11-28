@@ -7,6 +7,7 @@ function UserList() {
 
 	useEffect(() => {
 		function onGetUsers(users) {
+			if (JSON.stringify(users) === JSON.stringify(userList)) return;
 			setUserList(users);
 		}
 
@@ -15,9 +16,10 @@ function UserList() {
 		}
 
 		function onUserRemoved(user) {
-			const index = userList.findIndex(u => u.id === user.id);
+			const index = userList.findIndex(u => u.token === user.token);
 			if (index !== -1) {
-				userList.splice(index, 1);
+				const users = [ ...userList ];
+				users.splice(index, 1);
 				setUserList(userList);
 			}
 		}
@@ -35,9 +37,13 @@ function UserList() {
 	return (
 		<div id="userList">
 			<span>User List</span>
+			<hr />
 			<ul>
 				{userList.map(({ nickname }, index) => (
-					<li key={index}>
+					<li
+						key={index}
+						className="user"
+					>
 						{nickname}
 					</li>
 				))}

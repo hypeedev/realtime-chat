@@ -3,7 +3,9 @@ import React, { useEffect, useState } from "react";
 import "./Chat.css";
 
 function LoginWindow() {
-	const [ nickname, setNickname ] = useState("");
+	const user = JSON.parse(window.localStorage.getItem("user"));
+
+	const [ nickname, setNickname ] = useState(user.nickname);
 
 	useEffect(() => {
 		document.querySelector("#nicknameInput").focus();
@@ -17,17 +19,24 @@ function LoginWindow() {
 	function onKeyDown(e) {
 		if (e.key === "Enter") {
 			e.preventDefault();
-			socket.emit("setNickname", nickname, success => {
-				if (!success) {
+
+			if (user.nickname !== nickname) {
+				user.nickname = nickname;
+				localStorage.setItem("user", JSON.stringify(user));
+			}
+
+			socket.emit("login", user, user => {
+				if (!user) {
 					alert("Nickname is already taken.");
 					return;
 				}
 
 				document.querySelector("#loginWindow").style.display = "none";
-				document.querySelector("#messageInput")?.focus();
+				document.querySelector("#messageInputTextArea")?.focus();
 			});
 		}
 	}
+
 
 	return (
 		<div id="loginWindow">
@@ -36,6 +45,7 @@ function LoginWindow() {
 				id="nicknameInput"
 				className="input"
 				placeholder="Enter your nickname"
+				value={nickname}
 				required
 				onChange={onChange}
 				onKeyDown={onKeyDown}

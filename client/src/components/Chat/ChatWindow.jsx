@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import "./Chat.css";
 
 import MessageEntry from "./MessageEntry";
+import MessageContextMenu from "./MessageContextMenu";
 
 function ChatWindow() {
 	const [ messages, setMessages ] = useState([]);
@@ -22,6 +23,15 @@ function ChatWindow() {
 			handleScroll();
 		}
 
+		function onMessageDeleted(message) {
+			const index = messages.findIndex(m => m.timestamp === message.timestamp);
+			if (index !== -1) {
+				const msgs = [ ...messages ];
+				msgs.splice(index, 1);
+				setMessages(msgs);
+			}
+		}
+
 		function onMessages(messages) {
 			setMessages(messages);
 			handleScroll();
@@ -38,16 +48,18 @@ function ChatWindow() {
 		}
 
 		socket.on("newMessage", onNewMessage);
+		socket.on("messageDeleted", onMessageDeleted);
 		socket.on("messages", onMessages);
 		socket.on("userAdded", onUserAdded);
 		socket.on("userRemoved", onUserRemoved);
 
 		return () => socket
 			.off("newMessage", onNewMessage)
+			.off("messageDeleted", onMessageDeleted)
 			.off("messages", onMessages)
 			.off("userAdded", onUserAdded)
 			.off("userRemoved", onUserRemoved);
-	}, [ userScrolled ]);
+	}, [ userScrolled, messages ]);
 
 	function onScroll(e) {
 		const chatWindow = e.target;
@@ -55,10 +67,7 @@ function ChatWindow() {
 		setUserScrolled(scrollBottom > 1);
 	}
 
-	function onClick(e) {
-		const chatWindow = document.querySelector("#chatWindow");
-		chatWindow.scrollTop = chatWindow.scrollHeight;
-	}
+	let repeatedMessageCount = 0;
 
 	return (
 		<div
@@ -66,15 +75,32 @@ function ChatWindow() {
 			onScroll={onScroll}
 		>
 			<div>
-				{messages.map(({ timestamp, isSystem, user, message }, index) => (
-					<MessageEntry
-						key={timestamp}
-						timestamp={new Date(timestamp).toLocaleTimeString()}
-						isSystem={isSystem}
-						user={user}
-						message={message}
-					/>
-				))}
+				<MessageContextMenu />
+				{messages.map(({ timestamp, isSystem, user, message, image }, index) => {
+					if (messages[index - 1]?.user?.token === user?.token && repeatedMessageCount < 5) {
+						repeatedMessageCount++;
+						return (
+							<MessageEntry
+								key={timestamp}
+								isSystem={isSystem}
+								message={message}
+								image={image}
+							/>
+						);
+					} else {
+						repeatedMessageCount = 0;
+						return (
+							<MessageEntry
+								key={timestamp}
+								timestamp={timestamp}
+								isSystem={isSystem}
+								user={user}
+								message={message}
+								image={image}
+							/>
+						);
+					}
+				})}
 			</div>
 		</div>
 	);
